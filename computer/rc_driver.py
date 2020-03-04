@@ -1,9 +1,11 @@
 
+
 import cv2
 import sys
 import threading
-import socketservers
+import socketserver
 import numpy as np
+import time
 
 
 from model import NeuralNetwork
@@ -22,7 +24,6 @@ class SensorDataHandler(socketserver.BaseRequestHandler):
         while self.data:
             self.data = self.request.recv(1024)
             sensor_data = round(float(self.data), 1)
-            # print "{} sent:".format(self.client_address[0])
             print(sensor_data)
 
 
@@ -30,24 +31,20 @@ class VideoStreamHandler(socketserver.StreamRequestHandler):
 
     # h1: stop sign, measured manually
     # h2: traffic light, measured manually
-    h1 = 5.5  # cm
+    h1 = 8.0  # cm
     h2 = 5.5
 
-    # load trained neural network
-    nn = NeuralNetwork()
-    nn.load_model("saved_model/nn_model.xml")
 
     obj_detection = ObjectDetection()
-    rc_car = RCControl("COM5") 
+    rc_car = RCControl("COM5")
 
     # cascade classifiers
     stop_cascade = cv2.CascadeClassifier("cascade_xml/stop_sign.xml")
     light_cascade = cv2.CascadeClassifier("cascade_xml/traffic_light.xml")
 
     d_to_camera = DistanceToCamera()
-    # hard coded thresholds for stopping, sensor 30cm, other two 25cm
-    d_sensor_thresh = 30
-    d_stop_light_thresh = 25
+    d_sensor_thresh = 25
+    d_stop_light_thresh = 40
     d_stop_sign = d_stop_light_thresh
     d_light = d_stop_light_thresh
 
@@ -91,18 +88,15 @@ class VideoStreamHandler(socketserver.StreamRequestHandler):
                         self.d_light = d2
 
                     cv2.imshow('image', image)
-                    # cv2.imshow('mlp_image', roi)
 
                     # reshape image
                     image_array = roi.reshape(1, int(height/2) * width).astype(np.float32)
-
-                    # neural network makes prediction
-                    prediction = self.nn.predict(image_array)
 
                     # stop conditions
                     if sensor_data and int(sensor_data) < self.d_sensor_thresh:
                         print("Stop, obstacle in front")
                         self.rc_car.stop()
+                        #exit()
                         sensor_data = None
 
                     elif 0 < self.d_stop_sign < self.d_stop_light_thresh and stop_sign_active:
@@ -132,9 +126,9 @@ class VideoStreamHandler(socketserver.StreamRequestHandler):
                         elif self.obj_detection.green_light:
                             print("Green light")
                             pass
-                        elif self.obj_detection.yellow_light:
-                            print("Yellow light flashing")
-                            pass
+                        #elif self.obj_detection.yellow_light:
+                            #print("Yellow light flashing")
+                            #pass
 
                         self.d_light = self.d_stop_light_thresh
                         self.obj_detection.red_light = False
@@ -142,7 +136,7 @@ class VideoStreamHandler(socketserver.StreamRequestHandler):
                         self.obj_detection.yellow_light = False
 
                     else:
-                        self.rc_car.steer(prediction)
+                        self.rc_car.steer(2)
                         self.stop_start = cv2.getTickCount()
                         self.d_stop_sign = self.d_stop_light_thresh
 

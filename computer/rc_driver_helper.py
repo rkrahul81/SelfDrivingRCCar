@@ -1,5 +1,4 @@
 
-
 import serial
 import cv2
 import math
@@ -10,28 +9,28 @@ class RCControl(object):
     def __init__(self, serial_port):
         self.serial_port = serial.Serial(serial_port, 115200, timeout=1)
 
-    def steer(self, prediction):
-        if prediction == 2:
+    def steer(self, direction):
+        if direction == 2:
             self.serial_port.write(chr(1).encode())
             print("Forward")
-        elif prediction == 0:
-            self.serial_port.write(chr(7).encode())
-            print("Left")
-        elif prediction == 1:
-            self.serial_port.write(chr(6).encode())
-            print("Right")
         else:
             self.stop()
 
     def stop(self):
+
+
+
+        #self.serial_port.write(chr(0).encode())
+        #self.serial_port.write(chr(2).encode())
         self.serial_port.write(chr(0).encode())
+
 
 
 class DistanceToCamera(object):
 
     def __init__(self):
         # camera params
-        self.alpha = 8.0 * math.pi / 180    # degree measured manually
+        self.alpha = 7.5 * math.pi / 180    # degree measured manually
         self.v0 = 119.865631204             # from camera matrix
         self.ay = 332.262498472             # from camera matrix
 
@@ -97,8 +96,5 @@ class ObjectDetection(object):
                         cv2.putText(image, 'Green', (x_pos + 5, y_pos - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0),2)
                         self.green_light = True
 
-                    # yellow light
-                    # elif 4.0/8*(height-30) < maxLoc[1] < 5.5/8*(height-30):
-                    #    cv2.putText(image, 'Yellow', (x_pos+5, y_pos - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-                    #    self.yellow_light = True
+
         return v
